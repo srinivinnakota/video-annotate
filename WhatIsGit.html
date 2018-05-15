@@ -1,0 +1,54 @@
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+<title>Video Annotator Srinivas Vinnakota</title>
+
+  <style>
+    #container {
+      position: relative;
+    }
+    #container canvas, #overlay {
+      position: absolute;
+    }
+    canvas {
+      border: 1px solid black;
+    }
+  </style>
+<script src="annotate.js" >
+</script>
+
+</head>
+
+<body onload="VideoAnnotator.init();">
+
+<div>
+    <div id="mediapane">
+        <div id="container">
+          <div id="overlay">
+            <video id= "vid" controls>
+              <source src="WhatIsGit.mp4" type="video/mp4">
+            </video>
+
+          </div>
+          <canvas id="can"></canvas>
+        </div>
+
+
+        <div id="note" style="position:absolute; opacity:1.0" >
+          <textarea id="notetext" rows="10" cols="120" style="display:none">
+          </textarea>
+        </div>
+    </div>
+
+    <div id="contentspane" style="position:absolute; top:0px;">
+        <button type="button" onclick="VideoAnnotator.save();">Save</button>
+        <input type="file" id="files" name="files[]" onchange="load(this);"/>
+        <ul id= "bookmarkslist" style="list-style-type:none">
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>
+
