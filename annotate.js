@@ -25,6 +25,7 @@ var VideoAnnotator= (function () {
     var ctx;
     var notetextControl;
     var bookmarks;
+    var bookmarksdiv;
 
 
     ///////////
@@ -266,6 +267,8 @@ var VideoAnnotator= (function () {
         canvas.setAttribute("height", canvasHeight + "px"); // not style width
         notediv.style.top = noteDivTop + "px";
         contentspane.style.left = contentspaneLeft + "px";
+        bookmarksdiv.style.height= vid.videoHeight + "px";
+
     }
 
 
@@ -298,6 +301,10 @@ var VideoAnnotator= (function () {
         //vid.ontimeupdate = onVideoTimeUpdate;
         vid.onplay = onVideoPlaying;
         //vid.onseeked= onSeeked;
+
+        bookmarksdiv= document.getElementById('bookmarksdiv');
+
+
 
         // load annotationsfromDatabase
         var databaseKey = document.getElementsByTagName('source')[0].src;

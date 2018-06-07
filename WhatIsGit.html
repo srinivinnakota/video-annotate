@@ -44,8 +44,10 @@
     <div id="contentspane" style="position:absolute; top:0px;">
         <button type="button" onclick="VideoAnnotator.save();">Save</button>
         <input type="file" id="files" name="files[]" onchange="VideoAnnotator.load(this);"/>
-        <ul id= "bookmarkslist" style="list-style-type:none">
-        </ul>
+        <div id="bookmarksdiv" style="overflow-y: auto;">
+            <ul id= "bookmarkslist" style="list-style-type:none">
+            </ul>
+        </div>
     </div>
 </div>
 
