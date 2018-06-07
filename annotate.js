@@ -308,6 +308,23 @@ var VideoAnnotator= (function () {
 
         // Fix geometry
         fixGeometry();
+
+        //unload event
+        var bodyelement= document.getElementsByTagName("body")[0];
+        bodyelement.onbeforeunload= onbeforeunload;
+        window.onbeforeunload= onbeforeunload;
+
+
+    }
+
+    function onbeforeunload(e) {
+        var message = "You have not filled out the form.";
+        //var e = e2 || window.event;
+        //if (e) {
+        //    e.returnValue = message;
+        //}
+        e.returnValue = message;
+        //return message;
     }
 
     function onVideoPlaying(e) {
@@ -482,6 +499,8 @@ var VideoAnnotator= (function () {
 
     return {
         init:init,
-        save: save
+        save: save,
+        load:load,
+        onbeforeunload:onbeforeunload
     };
 })();
