@@ -27,7 +27,18 @@ var VideoAnnotator= (function () {
     var bookmarks;
     var bookmarksdiv;
 
-
+	var thisCurrentGeometryInfo= {
+		// all numbers below starting "this" are for storing "context" info with every note or a free drawing.
+		// they will be useful restoring notes/drawings later
+		thisFullWidth: -9999,
+		thisFullHeight: -8888,
+		thisMediaWidth: -7777,
+		thisMediaHeight: -6666,
+		thisWindowInnerWidth: -5555,
+		thisWindowInnerHeight: -4444,
+		thisCanvasWidth: -3333,
+		thisCanvasHeight: -2222
+	}
     ///////////
 
 
@@ -163,7 +174,7 @@ var VideoAnnotator= (function () {
 
     }
 
-    function placeAPostItAtMousePosition(e) {
+    function placeAPostItAtMousePosition(e) {		
         var DOM_img = placeAPostItAt_xy(e.offsetX, e.offsetY, "postit_" + getUniqueID());
 
         // Store the image so that we can later store after the note text is done
@@ -173,22 +184,26 @@ var VideoAnnotator= (function () {
                 left: DOM_img.style.left
             },
             postittext: "",
-            postitDomId: DOM_img.id
+            postitDomId: DOM_img.id,
+			CurrentGeometryInfo: {...thisCurrentGeometryInfo} // we need to store a copy, not a reference
         };
 
         addNote(currentNotePostit);
 
     }
 
-    function placeAPostItAt_xy(x, y, domID) {
+    function placeAPostItAt_xy(_x, _y, domID) {
+		// var nx= parseInt(x.substring(0, x.length-2)); // remove "px"
+		// nx= Math.round((nx*968.8888*1.0)/1281.7778);
+		// x= nx.toString() + "px";		
         var overlay = document.getElementById('overlay');
         var DOM_img = document.createElement("img");
         DOM_img.src = "positiGreen.jpg";
         DOM_img.style.width = POSTIT_WIDTH + "px";
         DOM_img.style.height = POSTIT_HEIGHT + "px";
         DOM_img.style.position = "absolute";
-        DOM_img.style.top = y;
-        DOM_img.style.left = x;
+        DOM_img.style.top = _y;
+        DOM_img.style.left = _x;
         DOM_img.style.zIndex = 20;
         DOM_img.classList.add("postit"); // so as to get click preference
         DOM_img.id = domID;
@@ -197,6 +212,79 @@ var VideoAnnotator= (function () {
 
         return DOM_img;
     }
+
+	function ScalePositions(x, y, GeometryAtTimeOfAnnotation){
+		var newx= -12345;
+		var newy= -23456;
+		var availableWidthAtTimeOfAnnotation= -8989;
+		var availableHeightAtTimeOfAnnotation= -4545;
+		var mediaWidthAtTimeOfAnnotation= -1212;
+		var mediaHeightAtTimeOfAnnotation= -2323;
+
+		if(GeometryAtTimeOfAnnotation == undefined){
+			// get old numbers
+			mediaWidthAtTimeOfAnnotation= 1920; //vid.videoWidth;
+			mediaHeightAtTimeOfAnnotation = 1080; //vid.videoHeight;
+			
+			/*
+			For following parameters, following calues are possible. 
+			task bars, bookmarkbar_Y/N, scaling 250% or 200%
+			1, N, 200
+			1, N, 250
+			1, Y, 200
+			1, Y, 250
+			2, N, 200
+			2, N, 250
+			2, Y, 200
+			2, Y, 250
+			*/
+
+			
+			var LegacyMigrationConstants= [
+				{availableWidth: 1536, availableHeight: 699, canvaswidth: 0, canvasheight: 0 }, // 2 taskbar, bookmarkbar, 250%
+				{availableWidth: 1536, availableHeight: 731, canvaswidth: 0, canvasheight: 0 }, // 2 taskbar, No-bookmark, 250%
+				{availableWidth: 1536, availableHeight: 731, canvaswidth: 0, canvasheight: 0 }, // 1 taskbar, bookmarkbar, 250%
+				{availableWidth: 1536, availableHeight: 763, canvaswidth: 0, canvasheight: 0 }, // 1 taskbar, No-bookmark, 250%
+
+				{availableWidth: 1920, availableHeight: 916, canvaswidth: 0, canvasheight: 0 }, // 2 taskbar, bookmarkbar, 200%
+				{availableWidth: 1920, availableHeight: 948, canvaswidth: 0, canvasheight: 0 },    // 2 taskbar, No-bookmark, 200%			
+				{availableWidth: 1920, availableHeight: 947, canvaswidth: 0, canvasheight: 0 }, // 1 taskbar, bookmarkbar, 200%
+				{availableWidth: 1920, availableHeight: 979, canvaswidth: 0, canvasheight: 0 }, // 1 taskbar, No-bookmark, 200%
+			];
+		
+			var LegacyOption= 2; //1 taskbar, bookmarkbar, 250%
+
+			var availableWidthAtTimeOfAnnotation = LegacyMigrationConstants[LegacyOption].availableWidth; //window.innerWidth;
+			var availableHeightAtTimeOfAnnotation = LegacyMigrationConstants[LegacyOption].availableHeight; //window.innerHeight;
+
+		}else {
+			var mediaWidthAtTimeOfAnnotation = GeometryAtTimeOfAnnotation.thisMediaWidth;
+			var mediaHeightAtTimeOfAnnotation = GeometryAtTimeOfAnnotation.thisMediaHeight;
+
+			var availableWidthAtTimeOfAnnotation = GeometryAtTimeOfAnnotation.thisFullWidth;
+			var availableHeightAtTimeOfAnnotation = GeometryAtTimeOfAnnotation.thisFullHeight;
+		}
+
+		// we will assume always we have more screen width available than height
+		var ratioOfPictureHeightToTotalHeightOfVideo = 1085.0 / 1170.0;
+		//var fullHeight = availableHeightAtTimeOfAnnotation - 10; // 466 // leave 10 pixels
+		var fullWidth = mediaWidthAtTimeOfAnnotation * (availableHeightAtTimeOfAnnotation / mediaHeightAtTimeOfAnnotation);
+
+		// Now scale
+		newx= Scale(x, thisCurrentGeometryInfo.thisFullWidth/fullWidth);
+		newy= Scale(y, thisCurrentGeometryInfo.thisFullHeight/availableHeightAtTimeOfAnnotation);
+
+
+		return {x:newx, y:newy};
+	}
+
+	function Scale(pos, factor){
+		var n= parseInt(pos.substring(0, pos.length-2)); // remove "px"
+		n= Math.round(n*factor);
+		var newpos= n.toString() + "px";
+		return newpos;
+	}
+
 
     function getUniqueID() {
         return Math.random().toString().replace(".", "") + Math.random().toString().replace(".", "");
@@ -251,11 +339,12 @@ var VideoAnnotator= (function () {
         // we will assume always we have more screen width available than height
         var fullHeight = availableHeight - 10; // 466 // leave 10 pixels
         var fullWidth = mediaWidth * (fullHeight / mediaHeight);
+		//thisFullHeight= fullHeight;
+		//thisFullWidth= fullWidth;
         var canvasHeight = parseInt(ratioOfPictureHeightToTotalHeightOfVideo * fullHeight); //432;
         var controlsHeight = fullHeight - canvasHeight;
         var noteDivTop = fullHeight - parseInt(fullHeight * 0.3);//controlsHeight + fullHeight;
         var contentspaneLeft = fullWidth + 10; //900;
-
 
         // when I add width as style I do not seem to be able to get the pencil draw correctly.
         // So I need to add an attribute as below
@@ -268,6 +357,19 @@ var VideoAnnotator= (function () {
         notediv.style.top = noteDivTop + "px";
         contentspane.style.left = contentspaneLeft + "px";
         bookmarksdiv.style.height= vid.videoHeight + "px";
+
+		// make a copy of current geometry
+		thisCurrentGeometryInfo= {
+			thisFullWidth: fullWidth,
+			thisFullHeight: fullHeight,
+			thisMediaWidth: mediaWidth,
+			thisMediaHeight: mediaHeight,
+			thisWindowInnerWidth: availableWidth,
+			thisWindowInnerHeight: availableHeight,
+			thisCanvasWidth: fullWidth,
+			thisCanvasHeight: canvasHeight
+		};
+
 
     }
 
@@ -363,14 +465,19 @@ var VideoAnnotator= (function () {
         // if there is any scribbling on this annotation, then display canvas; else do not display canvas
         if (!(annotation.canvas === undefined)) {
             var img = new Image();
+			//var width= thisFullWidth;
+			//var height= thisFullHeight;
             img.onload = function () {
-                ctx.drawImage(img, 0, 0);
+                //ctx.drawImage(img, 0, 0);
+				ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
             };
             img.src = annotation.canvas;
         }
         // display the note thumbnails only; cannot set text because there may be multiple notes
         annotation.notes.forEach(function (note) {
-            placeAPostItAt_xy(note.potitthumbnailPosition.left, note.potitthumbnailPosition.top, note.postitDomId);
+			// scale 
+			var newpos= ScalePositions(note.potitthumbnailPosition.left, note.potitthumbnailPosition.top, note.CurrentGeometryInfo);
+            placeAPostItAt_xy(newpos.x, newpos.y, note.postitDomId);
         });
 
 
@@ -419,6 +526,7 @@ var VideoAnnotator= (function () {
         }
 
         annotations[key].canvas = canvas.toDataURL();
+        annotations[key].GeometryInfoForCanvas = {...thisCurrentGeometryInfo} // we need to store a copy, not a reference
         refreshContentsAndPersist();
     }
 
