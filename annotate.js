@@ -480,6 +480,13 @@ var VideoAnnotator= (function () {
             placeAPostItAt_xy(newpos.x, newpos.y, note.postitDomId);
         });
 
+		// if only one note, display it
+		if(annotation.notes.length == 1){
+			var note= annotation.notes[0];
+			setTextAndFocusNoteText(note.postittext);
+                    currentNotePostit = note;
+		}
+
 
         // seek to the position
         vid.currentTime = parseFloat(key);
