@@ -7,6 +7,7 @@ var VideoAnnotator= (function () {
     // todo: delete drawing
 
     var mouseX, mouseY, mouseDown = 0;
+    var prevmouseX, prevmouseY = 0; // we remember previous x,y position to make the line smooth
     var drawingColor = "#991111";
     var penColor = drawingColor;
     var currentNoteText = "";
@@ -44,34 +45,60 @@ var VideoAnnotator= (function () {
 
 
 
-    function draw(x, y, e) {
+    function draw(e) {
+		// refer : https://stackoverflow.com/questions/3783419/smooth-user-drawn-lines-in-canvas
         if (currentTool === 'pencil') {
 
             var size = 2;
             var penColor = drawingColor;
-            ctx.fillStyle = penColor;
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2, true);
-            ctx.closePath();
-            ctx.fill();
+            
+			// they are the same means we are beginning to draw, so first move then begin path. Otherwise we
+			// first begin path, then move
+			if((prevmouseX == mouseX) && (prevmouseY == mouseY)){
+				ctx.moveTo(prevmouseX, prevmouseY);
+				ctx.beginPath();
+			} else {
+				ctx.beginPath();
+				ctx.moveTo(prevmouseX, prevmouseY);
+			}
+
+			ctx.lineCap = 'round';
+			ctx.lineWidth = 3;
+			ctx.lineTo(mouseX, mouseY);
+			ctx.strokeStyle = penColor;
+			ctx.stroke();
+
+			// By not closing path we get smoother and faster update in UI
+			//ctx.closePath();  
+
+			console.log("draw x,y:" + mouseX + "," + mouseY);
         } else if (currentTool === 'eraser') {
-            ctx.clearRect(x, y, 100, 100);
+            ctx.clearRect(mouseX, mouseX, 100, 100);
         }
 
         saveDrawing();
     }
 
     function onMouseDown(e) {
+		console.log("mouse down entered");
         if ((currentTool === 'pencil') || (currentTool === 'eraser')) {
+			console.log("mouse down pencil or eraser");
             mouseDown = 1;
-            draw(mouseX, mouseY, e);
+			mouseX= -1;
+			mouseY= -1;
+
+
+            //draw(e);			
         }
     }
 
     function onMouseUp(e) {
+		console.log("mouse up entered");
         if ((currentTool === 'pencil') || (currentTool === 'eraser')) {
+			console.log("mouse up pencil or eraser");
             mouseDown = 0;
         } else if (currentTool === 'note') {
+			console.log("mouse up note");
             placeAPostItAtMousePosition(e);
             handleKeyEvents(104);//only one note per click, then the mode defaults to hand mode
             // make the note text control visible
@@ -310,13 +337,18 @@ var VideoAnnotator= (function () {
     function onMouseMove(e) {
         getMousePos(e);
         if (mouseDown === 1) {
-            draw(mouseX, mouseY, e);
+            draw(e);
         }
     }
 
     function getMousePos(e) {
-        if (!e)
-            var e = event;
+        if (!e){
+            e = event;
+		}
+		console.log("Begin get mousepos, prev:" + prevmouseX +", " + prevmouseY)
+		prevmouseX = mouseX;
+		prevmouseY = mouseY;
+
         if (e.offsetX) {
             mouseX = e.offsetX;
             mouseY = e.offsetY;
@@ -325,6 +357,13 @@ var VideoAnnotator= (function () {
             mouseX = e.layerX;
             mouseY = e.layerY;
         }
+
+		if(prevmouseX == -1){
+			prevmouseX = mouseX;
+			prevmouseY = mouseY;
+		}
+		console.log("End get mousepos, prev:" + prevmouseX +", " + prevmouseY+ ", " + mouseX +", " + mouseY)
+
     }
 
     function fixGeometry() {
@@ -586,6 +625,9 @@ var VideoAnnotator= (function () {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         }, 0);
+
+		// if we dont clear from time to time we will have exceptions because we exceeded storage quota
+		alert("run localStorage.clear() from console after saving");
 
     }
 
